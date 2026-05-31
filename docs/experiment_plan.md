@@ -82,7 +82,7 @@ The collector writes both `outputs/summary.csv` and `outputs/summary_avg.csv`.
 
 ## Outputs
 
-Experiment outputs are saved under `outputs/` by default. This directory should not be committed to git.
+Experiment outputs are saved under `outputs/<dataset>/<attack>/<defense>/seed_<seed>/` by default. This directory should not be committed to git.
 
 ## TRACEGuard Runtime
 

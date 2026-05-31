@@ -259,7 +259,13 @@ class FedAvgServer:
         raise ValueError(f"Unsupported defense in this stage: {defense_name}")
 
     def run(self) -> Path:
-        output_dir = Path(self.config["project"]["output_dir"])
+        output_dir = (
+            Path(self.config["project"].get("output_dir", "outputs"))
+            / str(self.config.get("dataset", {}).get("name", "unknown_dataset"))
+            / str(self.config.get("attack", {}).get("name", "none"))
+            / str(self.config.get("defense", {}).get("name", "fedavg"))
+            / f"seed_{self.config.get('training', {}).get('seed', 'unknown')}"
+        )
         log_path = output_dir / "metrics.jsonl"
         test_loader = self._test_loader()
 
@@ -314,6 +320,10 @@ class FedAvgServer:
                 train_loss_mean = float(np.mean([result.train_loss for result in results]))
                 acc = clean_accuracy(self.model, test_loader, self.device)
                 record = {
+                    "dataset": self.config.get("dataset", {}).get("name"),
+                    "attack": self.config.get("attack", {}).get("name"),
+                    "defense": self.config.get("defense", {}).get("name"),
+                    "seed": self.config.get("training", {}).get("seed"),
                     "round": round_idx,
                     "clean_acc": acc,
                     "train_loss_mean": train_loss_mean,

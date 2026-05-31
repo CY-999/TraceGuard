@@ -64,7 +64,7 @@ Main defense baselines:
 
 TRACEGuard is executed on the server side through a secret probe bank, update response auditor, and robust admission controller. It does not require or use client-side local purification.
 
-Experiment outputs are saved under `outputs/` by default. The `outputs/` directory should not be committed to git.
+Experiment outputs are saved under `outputs/<dataset>/<attack>/<defense>/seed_<seed>/` by default. The `outputs/` directory should not be committed to git.
 
 ## Experiment Matrix Script
 

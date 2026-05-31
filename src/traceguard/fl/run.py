@@ -91,6 +91,18 @@ def apply_debug_limits(config: dict) -> None:
     dataset.setdefault("fake_data_on_missing", True)
 
 
+def normalize_config_names(config: dict) -> None:
+    for section, key in (
+        ("dataset", "name"),
+        ("attack", "name"),
+        ("defense", "name"),
+        ("partition", "type"),
+    ):
+        value = config.get(section, {}).get(key)
+        if isinstance(value, str):
+            config[section][key] = value.lower()
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -100,6 +112,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         cli_overrides=cli_overrides_from_args(args),
     )
     apply_debug_limits(config)
+    normalize_config_names(config)
 
     if args.print_config:
         print(dump_config(config), end="")

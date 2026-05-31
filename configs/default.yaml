@@ -1,6 +1,6 @@
 project:
   name: TRACEGuard
-  output_dir: outputs/debug
+  output_dir: outputs
 
 dataset:
   name: cifar10
