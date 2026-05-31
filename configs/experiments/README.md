@@ -44,3 +44,13 @@ python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense 
 ```
 
 If `--attack` or `--defense` is omitted, the script prints the corresponding main-paper matrix. It still does not run anything unless `--run` is provided.
+
+## Result Collection
+
+Collect all `metrics.jsonl` files under `outputs/` into a run-level CSV and an averaged CSV:
+
+```bash
+python scripts/collect_results.py --results-dir outputs --output outputs/summary.csv
+```
+
+This also writes `outputs/summary_avg.csv`, grouped by `dataset`, `attack`, and `defense`.
