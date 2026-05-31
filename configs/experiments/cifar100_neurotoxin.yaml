@@ -31,6 +31,8 @@ attack:
 
 defense:
   name: traceguard
+  num_byzantine: 2
+  trim_ratio: null
 
 traceguard:
   num_probes: 64

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import platform
+import math
 
 import numpy as np
 import torch
@@ -230,9 +231,7 @@ class FedAvgServer:
 
         if defense_name == "multi_krum":
             defense_cfg = self.config.get("defense", {})
-            num_byzantine = defense_cfg.get("num_byzantine")
-            if num_byzantine is None:
-                num_byzantine = self.config.get("attack", {}).get("num_malicious", 0)
+            num_byzantine = self._round_byzantine_bound(defense_cfg.get("num_byzantine"))
             return multi_krum(
                 updates,
                 num_byzantine=int(num_byzantine),
@@ -243,7 +242,7 @@ class FedAvgServer:
             defense_cfg = self.config.get("defense", {})
             num_byzantine = defense_cfg.get("num_byzantine")
             if defense_cfg.get("trim_ratio") is None and num_byzantine is None:
-                num_byzantine = self.config.get("attack", {}).get("num_malicious", 0)
+                num_byzantine = self._round_byzantine_bound(None)
             return trimmed_mean(
                 updates,
                 trim_ratio=defense_cfg.get("trim_ratio"),
@@ -310,6 +309,18 @@ class FedAvgServer:
             )
 
         raise ValueError(f"Unsupported defense in this stage: {defense_name}")
+
+    def _round_byzantine_bound(self, configured_value) -> int:  # noqa: ANN001
+        if configured_value is not None:
+            return int(configured_value)
+
+        total_clients = int(self.config.get("federated", {}).get("num_clients", 0))
+        clients_per_round = int(self.config.get("federated", {}).get("clients_per_round", 0))
+        num_malicious = int(self.config.get("attack", {}).get("num_malicious", 0))
+        if total_clients <= 0 or clients_per_round <= 0:
+            raise ValueError("Cannot estimate per-round Byzantine bound without positive federated client counts")
+        malicious_ratio = num_malicious / float(total_clients)
+        return int(math.ceil(malicious_ratio * clients_per_round))
 
     def run(self) -> Path:
         output_dir = self._output_dir()

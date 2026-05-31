@@ -39,6 +39,8 @@ Main experiments use dataset-specific ResNet-18 variants trained from scratch. N
 
 Main experiments use 10 malicious clients out of 100 by default, with `attack.poison_ratio=0.5`. Appendix sensitivity can vary poison ratio over `0.1/0.3/1.0` and malicious ratio over `4%/20%/30%`.
 
+`attack.num_malicious` is the global malicious-client count. Robust aggregation baselines use `defense.num_byzantine` as the Byzantine upper bound among clients participating in the current round. For Multi-Krum and Trimmed Mean, main experiments use `defense.num_byzantine=2` with 10 clients per round; this satisfies Multi-Krum's `n > 2f + 2` and Trimmed Mean's `2b < n`. Do not pass the global malicious-client count directly as Krum `f` or Trimmed Mean `b`.
+
 Main-paper defaults:
 
 - `seed=123`

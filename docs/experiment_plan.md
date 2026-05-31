@@ -71,6 +71,15 @@ attack.num_malicious = 10
 attack.poison_ratio = 0.5
 ```
 
+`attack.num_malicious` is the total number of malicious clients in the full federation. Robust aggregation baselines use a per-round Byzantine bound:
+
+```text
+defense.num_byzantine = 2
+defense.trim_ratio = null
+```
+
+For the main setting, there are 100 total clients, 10 clients per round, and 10 malicious clients globally. For Multi-Krum and Trimmed Mean, the main-paper configuration uses `defense.num_byzantine=2` as a per-round upper bound. This satisfies Multi-Krum's `n > 2f + 2` and Trimmed Mean's `2b < n` when `n=10`. The global malicious-client count should not be passed directly as the current-round Krum `f` or Trimmed Mean `b`.
+
 Appendix sensitivity settings can include `poison_ratio=0.1/0.3/1.0` and malicious ratios `4%/20%/30%`.
 
 ## Commands
