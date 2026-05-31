@@ -1,8 +1,8 @@
-# TRACEGuard Main CIFAR-10 Experiment Templates
+# TRACEGuard Main Experiment Templates
 
-These YAML files are templates for the main CIFAR-10 experiments in the TRACEGuard paper.
+These YAML files are templates for the main CIFAR-10, CIFAR-100, and Tiny-ImageNet experiments in the TRACEGuard paper.
 
-They do not automatically download data. Prepare CIFAR-10 under the configured `dataset.data_dir` before running an experiment.
+They do not automatically download data. Prepare each dataset under the configured `dataset.data_dir` before running an experiment.
 
 Example:
 
@@ -30,6 +30,12 @@ Main attack baselines:
 - `dba`
 - `neurotoxin`
 - `a3fl`
+
+Supported main datasets:
+
+- `cifar10`
+- `cifar100`
+- `tinyimagenet`
 
 ## Experiment Matrix Script
 

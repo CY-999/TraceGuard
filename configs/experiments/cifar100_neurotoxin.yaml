@@ -1,0 +1,40 @@
+dataset:
+  name: cifar100
+  download: false
+
+partition:
+  type: dirichlet
+  alpha: 0.5
+
+federated:
+  num_clients: 100
+  clients_per_round: 10
+
+training:
+  rounds: 100
+  local_epochs: 2
+  seed: 123
+
+model:
+  name: simple_cnn
+  num_classes: 100
+
+attack:
+  name: neurotoxin
+  num_malicious: 4
+  target_label: 0
+  poison_ratio: 0.1
+
+defense:
+  name: traceguard
+
+traceguard:
+  num_probes: 64
+  probe_families:
+    - patch
+    - blend_low_alpha
+    - frequency_sine
+    - warping
+  tau: 4.0
+  reference_per_class: 5
+  adaptive_steps: 5
