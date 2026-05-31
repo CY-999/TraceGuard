@@ -17,18 +17,10 @@ dependencies = [
   "pyyaml",
   "tqdm",
   "scikit-learn",
-  "pytest",
 ]
-
-[project.optional-dependencies]
-dev = ["pytest"]
 
 [project.scripts]
 traceguard-run = "traceguard.fl.run:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]

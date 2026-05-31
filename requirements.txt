@@ -6,4 +6,3 @@ pandas
 pyyaml
 tqdm
 scikit-learn
-pytest
