@@ -4,6 +4,8 @@ These YAML files are templates for the main CIFAR-10, CIFAR-100, and Tiny-ImageN
 
 They do not automatically download data. Prepare each dataset under the configured `dataset.data_dir` before running an experiment.
 
+CPU is only for code-connectivity checks. Main-paper experiments should be run on GPU.
+
 Tiny-ImageNet should use the common local layout:
 
 ```text
@@ -36,6 +38,35 @@ Main experiments use dataset-specific ResNet-18 variants trained from scratch. N
 `simple_cnn` is reserved for sanity/debug runs.
 
 Main experiments use 10 malicious clients out of 100 by default, with `attack.poison_ratio=0.5`. Appendix sensitivity can vary poison ratio over `0.1/0.3/1.0` and malicious ratio over `4%/20%/30%`.
+
+Main-paper defaults:
+
+- `seed=123`
+- 100 clients
+- 10 clients per round
+- 10 malicious clients
+- `poison_ratio=0.5`
+- Dirichlet non-IID `alpha=0.5`
+
+Single GPU experiment:
+
+```bash
+python -m traceguard.fl.run --config configs/experiments/cifar10_dba.yaml --defense traceguard
+```
+
+Run the full CIFAR-10 matrix:
+
+```bash
+python scripts/run_main_experiments.py --dataset cifar10 --run
+```
+
+Collect CIFAR-10 results:
+
+```bash
+python scripts/collect_results.py --results-dir outputs --output outputs/cifar10_summary.csv
+```
+
+Before running, confirm CIFAR-10 and CIFAR-100 are under `data/`, Tiny-ImageNet is under `data/tiny-imagenet-200/`, and `outputs/` is not committed to git.
 
 Main defense baselines can be selected with CLI overrides:
 

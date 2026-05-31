@@ -1,0 +1,41 @@
+project:
+  output_dir: outputs/sanity_cpu
+
+dataset:
+  name: cifar10
+  data_dir: data
+  download: false
+  num_workers: 0
+  batch_size: 16
+  test_batch_size: 64
+  max_train_samples: 1000
+  max_test_samples: 200
+
+model:
+  name: resnet18_cifar
+  num_classes: 10
+
+partition:
+  type: iid
+
+federated:
+  num_clients: 5
+  clients_per_round: 2
+
+training:
+  rounds: 1
+  local_epochs: 1
+  lr: 0.01
+  momentum: 0.9
+  seed: 123
+
+attack:
+  name: model_replacement
+  num_malicious: 1
+  target_label: 0
+  poison_ratio: 0.3
+  trigger_type: patch
+  scale_factor: 5.0
+
+defense:
+  name: fedavg

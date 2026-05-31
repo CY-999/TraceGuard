@@ -30,6 +30,8 @@ Configuration is loaded from `configs/default.yaml` by default. Passing `--confi
 
 Main-paper experiment templates live in `configs/experiments/`.
 
+CPU runs are intended only for code-connectivity checks such as the sanity smoke config. Main-paper experiments should be run on GPU.
+
 Datasets:
 
 - CIFAR-10
@@ -55,6 +57,24 @@ Defenses:
 
 The default seed is fixed to `123`. Data is not downloaded automatically; prepare CIFAR-10, CIFAR-100, and Tiny-ImageNet under `dataset.data_dir`.
 
+Main-paper defaults:
+
+- CIFAR-10: `resnet18_cifar`, 200 rounds
+- CIFAR-100: `resnet18_cifar`, 300 rounds
+- Tiny-ImageNet: `resnet18_tiny`, 300 rounds
+- `seed=123`
+- 100 clients
+- 10 clients per round
+- 10 malicious clients
+- `poison_ratio=0.5`
+- Dirichlet non-IID `alpha=0.5`
+
+Single GPU experiment:
+
+```bash
+python -m traceguard.fl.run --config configs/experiments/cifar10_dba.yaml --defense traceguard
+```
+
 Single experiment dry-run:
 
 ```bash
@@ -77,6 +97,12 @@ Collect results:
 
 ```bash
 python scripts/collect_results.py --results-dir outputs --output outputs/summary.csv
+```
+
+Collect CIFAR-10 results:
+
+```bash
+python scripts/collect_results.py --results-dir outputs --output outputs/cifar10_summary.csv
 ```
 
 Sanity dry-run for one fakedata combination:

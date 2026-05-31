@@ -56,6 +56,8 @@ The runner accepts `--seed` for temporary overrides, but multi-seed repeats are 
 
 Main experiments use dataset-specific ResNet-18 variants trained from scratch. No ImageNet pretrained weights are used or downloaded.
 
+CPU is only for code-connectivity checks. Main-paper experiments should be run on GPU.
+
 - CIFAR-10: `model.name=resnet18_cifar`, `model.num_classes=10`, `training.rounds=200`
 - CIFAR-100: `model.name=resnet18_cifar`, `model.num_classes=100`, `training.rounds=300`
 - Tiny-ImageNet: `model.name=resnet18_tiny`, `model.num_classes=200`, `training.rounds=300`
@@ -98,6 +100,31 @@ python scripts/collect_results.py --results-dir outputs --output outputs/summary
 ```
 
 The collector writes both `outputs/summary.csv` and `outputs/summary_avg.csv`.
+
+Single GPU experiment:
+
+```bash
+python -m traceguard.fl.run --config configs/experiments/cifar10_dba.yaml --defense traceguard
+```
+
+Run the full CIFAR-10 main matrix:
+
+```bash
+python scripts/run_main_experiments.py --dataset cifar10 --run
+```
+
+Collect CIFAR-10 results:
+
+```bash
+python scripts/collect_results.py --results-dir outputs --output outputs/cifar10_summary.csv
+```
+
+Before running main experiments, confirm:
+
+- CIFAR-10 is available under `data/`
+- CIFAR-100 is available under `data/`
+- Tiny-ImageNet is available under `data/tiny-imagenet-200/`
+- `outputs/` is ignored by git and should not be committed
 
 ## Sanity Matrix
 
