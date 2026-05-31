@@ -41,6 +41,8 @@ attack:
   fragment_layout: four_corners
   trigger_size: 4
   trigger_value: 1.0
+  mask_ratio: 0.2
+  history_window: 5
 
 defense:
   name: fedavg

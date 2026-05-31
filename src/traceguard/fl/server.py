@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, Dataset, Subset
 from traceguard.aggregation.fedavg import apply_update, fedavg
 from traceguard.attacks.dba import DBAAttack
 from traceguard.attacks.model_replacement import ModelReplacementAttack
+from traceguard.attacks.neurotoxin import NeurotoxinAttack
 from traceguard.fl.client import FLClient
 from traceguard.metrics.classification import attack_success_rate, clean_accuracy
 from traceguard.utils.jsonl import JsonlWriter
@@ -41,6 +42,13 @@ class FedAvgServer:
             if self.attack is not None
             else set()
         )
+        self.global_state_history = [self._snapshot_state()]
+
+    def _snapshot_state(self) -> dict[str, torch.Tensor]:
+        return {
+            key: value.detach().cpu().clone()
+            for key, value in self.model.state_dict().items()
+        }
 
     def _build_attack(self):
         attack_name = self.config.get("attack", {}).get("name", "none").lower()
@@ -50,6 +58,8 @@ class FedAvgServer:
             return ModelReplacementAttack.from_config(self.config)
         if attack_name == "dba":
             return DBAAttack.from_config(self.config)
+        if attack_name == "neurotoxin":
+            return NeurotoxinAttack.from_config(self.config)
         raise ValueError(f"Unsupported attack in this stage: {attack_name}")
 
     def _num_workers(self) -> int:
@@ -108,12 +118,21 @@ class FedAvgServer:
                             and hasattr(self.attack, "scale_update")
                         ):
                             result.update = self.attack.scale_update(result.update)
+                        if (
+                            result.client_id in self.malicious_client_ids
+                            and hasattr(self.attack, "mask_update")
+                        ):
+                            result.update = self.attack.mask_update(
+                                result.update,
+                                self.global_state_history,
+                            )
 
                 update = fedavg(
                     [result.update for result in results],
                     [result.num_samples for result in results],
                 )
                 apply_update(self.model, update)
+                self.global_state_history.append(self._snapshot_state())
 
                 train_loss_mean = float(np.mean([result.train_loss for result in results]))
                 acc = clean_accuracy(self.model, test_loader, self.device)
