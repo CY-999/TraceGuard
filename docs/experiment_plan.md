@@ -80,6 +80,28 @@ python scripts/collect_results.py --results-dir outputs --output outputs/summary
 
 The collector writes both `outputs/summary.csv` and `outputs/summary_avg.csv`.
 
+## Sanity Matrix
+
+The sanity runner generates tiny `fakedata` commands to check that main attack and defense entry points are wired correctly. It defaults to dry-run.
+
+Single combination dry-run:
+
+```bash
+python scripts/run_sanity_matrix.py --attack dba --defense traceguard --dry-run
+```
+
+Single combination run:
+
+```bash
+python scripts/run_sanity_matrix.py --attack dba --defense traceguard --run
+```
+
+Full sanity matrix dry-run:
+
+```bash
+python scripts/run_sanity_matrix.py --dry-run
+```
+
 ## Outputs
 
 Experiment outputs are saved under `outputs/<dataset>/<attack>/<defense>/seed_<seed>/` by default. This directory should not be committed to git.

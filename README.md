@@ -79,6 +79,12 @@ Collect results:
 python scripts/collect_results.py --results-dir outputs --output outputs/summary.csv
 ```
 
+Sanity dry-run for one fakedata combination:
+
+```bash
+python scripts/run_sanity_matrix.py --attack dba --defense traceguard --dry-run
+```
+
 See `docs/experiment_plan.md` for the full experiment plan and Tiny-ImageNet directory layout. Results are saved under `outputs/<dataset>/<attack>/<defense>/seed_<seed>/`, and `outputs/` should not be committed to git.
 
 TRACEGuard runs entirely on the server side: secret probe bank, update response auditor, and robust admission controller. It does not use client-side local purification.
