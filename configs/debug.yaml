@@ -58,3 +58,14 @@ defense:
   discrepancy_metric: cosine
   tau: 4.0
   rescale_strength: 0.5
+
+traceguard:
+  num_probes: 8
+  probe_families:
+    - patch
+    - blend_low_alpha
+    - frequency_sine
+    - warping
+  tau: 4.0
+  reference_per_class: 2
+  adaptive_steps: 2

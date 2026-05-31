@@ -21,6 +21,10 @@ from traceguard.defenses.fdcr import FDCRDefense, estimate_fisher_importance
 from traceguard.defenses.flip import FLIPDefense
 from traceguard.fl.client import FLClient
 from traceguard.metrics.classification import attack_success_rate, clean_accuracy
+from traceguard.traceguard.admission import RobustAdmissionController
+from traceguard.traceguard.aggregation import traceguard_aggregate
+from traceguard.traceguard.auditor import UpdateResponseAuditor
+from traceguard.traceguard.probe_bank import TriggerFamilyProbeBank
 from traceguard.utils.jsonl import JsonlWriter
 
 
@@ -59,6 +63,24 @@ class FedAvgServer:
             if config.get("defense", {}).get("name", "fedavg").lower() == "fdcr"
             else None
         )
+        self.traceguard_probe_bank = (
+            TriggerFamilyProbeBank.from_config(config)
+            if config.get("defense", {}).get("name", "fedavg").lower() == "traceguard"
+            else None
+        )
+        self.traceguard_auditor = (
+            UpdateResponseAuditor(device=self.device)
+            if self.traceguard_probe_bank is not None
+            else None
+        )
+        self.traceguard_admission = (
+            RobustAdmissionController(
+                tau=float(config.get("traceguard", {}).get("tau", config.get("defense", {}).get("tau", 4.0)))
+            )
+            if self.traceguard_probe_bank is not None
+            else None
+        )
+        self.last_traceguard_log: dict = {}
 
     def _snapshot_state(self) -> dict[str, torch.Tensor]:
         return {
@@ -137,9 +159,10 @@ class FedAvgServer:
             raise ValueError("clients_per_round cannot exceed num_clients")
         return self.rng.choice(num_clients, size=clients_per_round, replace=False).astype(int).tolist()
 
-    def _aggregate_updates(self, results, importances=None) -> dict[str, torch.Tensor]:  # noqa: ANN001
+    def _aggregate_updates(self, results, importances=None, round_idx: int = 0) -> dict[str, torch.Tensor]:  # noqa: ANN001
         defense_name = self.config.get("defense", {}).get("name", "fedavg").lower()
         updates = [result.update for result in results]
+        self.last_traceguard_log = {}
         if defense_name == "fedavg":
             return fedavg(
                 updates,
@@ -189,6 +212,50 @@ class FedAvgServer:
                 raise ValueError("FDCR aggregation requires Fisher importance profiles")
             return self.fdcr_defense.aggregate(updates, importances)
 
+        if defense_name == "traceguard":
+            if (
+                self.traceguard_probe_bank is None
+                or self.traceguard_auditor is None
+                or self.traceguard_admission is None
+            ):
+                raise ValueError("TRACEGuard components were not initialized")
+            probes = self.traceguard_probe_bank.sample(
+                self.test_dataset,
+                round_idx=round_idx,
+                model=self.model,
+                device=self.device,
+            )
+            client_ids = [result.client_id for result in results]
+            audit_results = self.traceguard_auditor.audit_many(
+                global_model=self.model,
+                updates=updates,
+                probes=probes,
+                client_ids=client_ids,
+            )
+            risks = torch.tensor([result.risk for result in audit_results], dtype=torch.float32)
+            z_scores = self.traceguard_admission.compute_z_scores(risks)
+            weights = self.traceguard_admission.compute_weights(risks)
+            accepted = int((weights >= 1.0 - 1e-12).sum().item())
+            rejected = int((weights <= 1e-12).sum().item())
+            downweighted = int(((weights > 1e-12) & (weights < 1.0 - 1e-12)).sum().item())
+            self.last_traceguard_log = {
+                "traceguard_risk_scores": [float(value) for value in risks.tolist()],
+                "traceguard_z_scores": [float(value) for value in z_scores.tolist()],
+                "traceguard_weights": [float(value) for value in weights.tolist()],
+                "num_accepted": accepted,
+                "num_downweighted": downweighted,
+                "num_rejected": rejected,
+            }
+            return traceguard_aggregate(
+                updates,
+                weights,
+                sample_counts=[result.num_samples for result in results],
+                risk_scores=risks,
+                z_scores=z_scores,
+                tau=self.traceguard_admission.tau,
+                eps=self.traceguard_admission.eps,
+            )
+
         raise ValueError(f"Unsupported defense in this stage: {defense_name}")
 
     def run(self) -> Path:
@@ -236,7 +303,11 @@ class FedAvgServer:
                                 self.global_state_history,
                             )
 
-                update = self._aggregate_updates(results, importances=importances)
+                update = self._aggregate_updates(
+                    results,
+                    importances=importances,
+                    round_idx=round_idx,
+                )
                 apply_update(self.model, update)
                 self.global_state_history.append(self._snapshot_state())
 
@@ -256,6 +327,8 @@ class FedAvgServer:
                         self.attack.target_label,
                         self.device,
                     )
+                if self.last_traceguard_log:
+                    record.update(self.last_traceguard_log)
                 writer.write(record)
                 status = (
                     f"round={round_idx} clean_acc={acc:.4f} "
