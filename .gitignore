@@ -13,7 +13,9 @@ wandb/
 *.tar
 *.tar.gz
 *.log
+*.egg-info/
 
 __pycache__/
 .pytest_cache/
+pytest-cache-files-*/
 .DS_Store

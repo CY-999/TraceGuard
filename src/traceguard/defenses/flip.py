@@ -9,6 +9,7 @@ labels. Malicious clients are not forced to run this defense.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 
 import torch
@@ -95,7 +96,10 @@ def optimize_reverse_trigger(
 ) -> torch.Tensor:
     """Reverse-optimize a trigger that induces target-label predictions."""
     device = torch.device(device)
-    model = global_model.to(device)
+    # Use a private model copy for reverse-trigger optimization. Freezing the
+    # server's live global model would make later client training losses lose
+    # their parameter gradient graph.
+    model = deepcopy(global_model).to(device)
     model.eval()
     for parameter in model.parameters():
         parameter.requires_grad_(False)
