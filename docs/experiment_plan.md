@@ -87,6 +87,8 @@ Single experiment run:
 python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --run
 ```
 
+GPU resources are usually limited. Prefer running one experiment tuple at a time; the runner refuses `--run` unless `--dataset`, `--attack`, and `--defense` are all specified. Use dry-run for full matrix inspection.
+
 Full CIFAR-10 matrix dry-run:
 
 ```bash

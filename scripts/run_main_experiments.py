@@ -101,6 +101,12 @@ def print_command(item: ExperimentCommand) -> None:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+    if args.run and not (args.dataset and args.attack and args.defense):
+        parser.error(
+            "Running experiments requires a complete tuple: "
+            "--dataset DATASET --attack ATTACK --defense DEFENSE --run"
+        )
+
     commands = generate_commands(args)
 
     for item in commands:

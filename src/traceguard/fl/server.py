@@ -82,6 +82,59 @@ class FedAvgServer:
         )
         self.last_traceguard_log: dict = {}
 
+    def _output_dir(self) -> Path:
+        return (
+            Path(self.config["project"].get("output_dir", "outputs"))
+            / str(self.config.get("dataset", {}).get("name", "unknown_dataset"))
+            / str(self.config.get("attack", {}).get("name", "none"))
+            / str(self.config.get("defense", {}).get("name", "fedavg"))
+            / f"seed_{self.config.get('training', {}).get('seed', 'unknown')}"
+        )
+
+    def _format_clients(self, clients: list[int]) -> str:
+        visible = clients[:10]
+        suffix = "" if len(clients) <= 10 else f", ...(+{len(clients) - 10} more)"
+        return f"[{', '.join(str(client) for client in visible)}{suffix}]"
+
+    def _print_run_header(self, output_dir: Path) -> None:
+        print("=" * 60)
+        print("[Run]")
+        print(f"  dataset     : {self.config.get('dataset', {}).get('name')}")
+        print(f"  attack      : {self.config.get('attack', {}).get('name')}")
+        print(f"  defense     : {self.config.get('defense', {}).get('name')}")
+        print(f"  model       : {self.config.get('model', {}).get('name')}")
+        print(f"  seed        : {self.config.get('training', {}).get('seed')}")
+        print(f"  output_dir  : {output_dir}")
+        print("-" * 60)
+        print("[Config]")
+        print(
+            "  clients     : "
+            f"{self.config.get('federated', {}).get('clients_per_round')} / "
+            f"{self.config.get('federated', {}).get('num_clients')} per round"
+        )
+        print(f"  rounds      : {self.config.get('training', {}).get('rounds')}")
+        print(f"  local_epoch : {self.config.get('training', {}).get('local_epochs')}")
+        print(f"  batch_size  : {self.config.get('dataset', {}).get('batch_size')}")
+        print("-" * 60)
+
+    def _print_round_log(self, record: dict, total_rounds: int) -> None:
+        print(f"[Round {int(record['round']):03d}/{int(total_rounds):03d}]")
+        print(f"  ACC         : {float(record['clean_acc']) * 100.0:.2f}%")
+        if "asr" in record:
+            print(f"  ASR         : {float(record['asr']) * 100.0:.2f}%")
+        print(f"  Loss        : {float(record['train_loss_mean']):.4f}")
+        print(f"  Selected    : {self._format_clients(record['selected_clients'])}")
+        if "traceguard_weights" in record:
+            mean_weight = sum(record["traceguard_weights"]) / max(len(record["traceguard_weights"]), 1)
+            mean_risk = sum(record["traceguard_risk_scores"]) / max(len(record["traceguard_risk_scores"]), 1)
+            print("[TRACEGuard]")
+            print(f"  accepted    : {record.get('num_accepted')}")
+            print(f"  downweighted: {record.get('num_downweighted')}")
+            print(f"  rejected    : {record.get('num_rejected')}")
+            print(f"  mean_weight : {mean_weight:.4f}")
+            print(f"  mean_risk   : {mean_risk:.4f}")
+        print("-" * 60)
+
     def _snapshot_state(self) -> dict[str, torch.Tensor]:
         return {
             key: value.detach().cpu().clone()
@@ -259,18 +312,14 @@ class FedAvgServer:
         raise ValueError(f"Unsupported defense in this stage: {defense_name}")
 
     def run(self) -> Path:
-        output_dir = (
-            Path(self.config["project"].get("output_dir", "outputs"))
-            / str(self.config.get("dataset", {}).get("name", "unknown_dataset"))
-            / str(self.config.get("attack", {}).get("name", "none"))
-            / str(self.config.get("defense", {}).get("name", "fedavg"))
-            / f"seed_{self.config.get('training', {}).get('seed', 'unknown')}"
-        )
+        output_dir = self._output_dir()
         log_path = output_dir / "metrics.jsonl"
         test_loader = self._test_loader()
+        total_rounds = int(self.config["training"]["rounds"])
+        self._print_run_header(output_dir)
 
         with JsonlWriter(log_path) as writer:
-            for round_idx in range(1, int(self.config["training"]["rounds"]) + 1):
+            for round_idx in range(1, total_rounds + 1):
                 selected_clients = self._select_clients()
                 clients = [self._make_client(client_id) for client_id in selected_clients]
                 importances = None
@@ -340,13 +389,9 @@ class FedAvgServer:
                 if self.last_traceguard_log:
                     record.update(self.last_traceguard_log)
                 writer.write(record)
-                status = (
-                    f"round={round_idx} clean_acc={acc:.4f} "
-                    f"train_loss_mean={train_loss_mean:.4f} "
-                    f"selected_clients={selected_clients}"
-                )
-                if "asr" in record:
-                    status += f" asr={record['asr']:.4f}"
-                print(status)
+                self._print_round_log(record, total_rounds)
 
+        print("[Saved]")
+        print(f"  metrics     : {log_path}")
+        print("=" * 60)
         return log_path
