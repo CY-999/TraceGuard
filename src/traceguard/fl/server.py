@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset, Subset
 
 from traceguard.aggregation.fedavg import apply_update, fedavg
+from traceguard.aggregation.multi_krum import multi_krum
 from traceguard.attacks.a3fl import A3FLAttack
 from traceguard.attacks.dba import DBAAttack
 from traceguard.attacks.model_replacement import ModelReplacementAttack
@@ -107,6 +108,28 @@ class FedAvgServer:
             raise ValueError("clients_per_round cannot exceed num_clients")
         return self.rng.choice(num_clients, size=clients_per_round, replace=False).astype(int).tolist()
 
+    def _aggregate_updates(self, results) -> dict[str, torch.Tensor]:  # noqa: ANN001
+        defense_name = self.config.get("defense", {}).get("name", "fedavg").lower()
+        updates = [result.update for result in results]
+        if defense_name == "fedavg":
+            return fedavg(
+                updates,
+                [result.num_samples for result in results],
+            )
+
+        if defense_name == "multi_krum":
+            defense_cfg = self.config.get("defense", {})
+            num_byzantine = defense_cfg.get("num_byzantine")
+            if num_byzantine is None:
+                num_byzantine = self.config.get("attack", {}).get("num_malicious", 0)
+            return multi_krum(
+                updates,
+                num_byzantine=int(num_byzantine),
+                num_selected=defense_cfg.get("num_selected"),
+            )
+
+        raise ValueError(f"Unsupported defense in this stage: {defense_name}")
+
     def run(self) -> Path:
         output_dir = Path(self.config["project"]["output_dir"])
         log_path = output_dir / "metrics.jsonl"
@@ -140,10 +163,7 @@ class FedAvgServer:
                                 self.global_state_history,
                             )
 
-                update = fedavg(
-                    [result.update for result in results],
-                    [result.num_samples for result in results],
-                )
+                update = self._aggregate_updates(results)
                 apply_update(self.model, update)
                 self.global_state_history.append(self._snapshot_state())
 

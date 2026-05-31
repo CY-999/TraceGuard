@@ -50,6 +50,8 @@ attack:
 
 defense:
   name: fedavg
+  num_byzantine: null
+  num_selected: null
 
 debug:
   enabled: false
