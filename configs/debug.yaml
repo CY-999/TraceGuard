@@ -1,0 +1,14 @@
+debug:
+  enabled: true
+
+dataset:
+  name: cifar10
+  num_workers: 0
+
+federated:
+  num_clients: 3
+  clients_per_round: 2
+
+training:
+  rounds: 1
+  seed: 123

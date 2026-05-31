@@ -7,3 +7,6 @@ pyyaml
 tqdm
 scikit-learn
 pytest
+
+[dev]
+pytest

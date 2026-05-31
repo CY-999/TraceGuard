@@ -1,3 +1,21 @@
+Metadata-Version: 2.4
+Name: traceguard
+Version: 0.1.0
+Summary: Server-side trigger-family auditing scaffold for federated backdoor defense.
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: torch
+Requires-Dist: torchvision
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: pandas
+Requires-Dist: pyyaml
+Requires-Dist: tqdm
+Requires-Dist: scikit-learn
+Requires-Dist: pytest
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+
 # TRACEGuard
 
 TRACEGuard is a server-side trigger-family functional auditing framework for federated backdoor defense.

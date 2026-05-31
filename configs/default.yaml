@@ -1,0 +1,24 @@
+project:
+  name: TRACEGuard
+
+dataset:
+  name: cifar10
+  root: data
+  num_workers: 2
+
+federated:
+  num_clients: 10
+  clients_per_round: 5
+
+training:
+  rounds: 10
+  seed: 42
+
+attack:
+  name: none
+
+defense:
+  name: fedavg
+
+debug:
+  enabled: false
