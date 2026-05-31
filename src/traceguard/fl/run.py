@@ -105,11 +105,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(dump_config(config), end="")
         return 0
 
-    if config["attack"]["name"] != "none":
+    if config["attack"]["name"] not in {"none", "model_replacement"}:
         raise ValueError(
-            "Training-time attacks are not implemented in this stage. "
-            "Only attack=none is supported for training; ASR evaluation utilities "
-            "are available separately."
+            "Only attack=none and attack=model_replacement are supported in this stage."
         )
     if config["defense"]["name"] != "fedavg":
         raise ValueError("Only defense=fedavg is supported in this stage")

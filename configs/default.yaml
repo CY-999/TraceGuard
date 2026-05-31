@@ -33,6 +33,11 @@ model:
 
 attack:
   name: none
+  num_malicious: 0
+  target_label: 0
+  poison_ratio: 0.1
+  trigger_type: patch
+  scale_factor: 1.0
 
 defense:
   name: fedavg
