@@ -17,6 +17,7 @@ from traceguard.attacks.a3fl import A3FLAttack
 from traceguard.attacks.dba import DBAAttack
 from traceguard.attacks.model_replacement import ModelReplacementAttack
 from traceguard.attacks.neurotoxin import NeurotoxinAttack
+from traceguard.defenses.fdcr import FDCRDefense, estimate_fisher_importance
 from traceguard.defenses.flip import FLIPDefense
 from traceguard.fl.client import FLClient
 from traceguard.metrics.classification import attack_success_rate, clean_accuracy
@@ -51,6 +52,11 @@ class FedAvgServer:
         self.flip_defense = (
             FLIPDefense.from_config(config)
             if config.get("defense", {}).get("name", "fedavg").lower() == "flip"
+            else None
+        )
+        self.fdcr_defense = (
+            FDCRDefense.from_config(config)
+            if config.get("defense", {}).get("name", "fedavg").lower() == "fdcr"
             else None
         )
 
@@ -131,7 +137,7 @@ class FedAvgServer:
             raise ValueError("clients_per_round cannot exceed num_clients")
         return self.rng.choice(num_clients, size=clients_per_round, replace=False).astype(int).tolist()
 
-    def _aggregate_updates(self, results) -> dict[str, torch.Tensor]:  # noqa: ANN001
+    def _aggregate_updates(self, results, importances=None) -> dict[str, torch.Tensor]:  # noqa: ANN001
         defense_name = self.config.get("defense", {}).get("name", "fedavg").lower()
         updates = [result.update for result in results]
         if defense_name == "fedavg":
@@ -178,6 +184,11 @@ class FedAvgServer:
                 cluster_metric=str(defense_cfg.get("cluster_metric", "cosine")),
             )
 
+        if defense_name == "fdcr":
+            if self.fdcr_defense is None or importances is None:
+                raise ValueError("FDCR aggregation requires Fisher importance profiles")
+            return self.fdcr_defense.aggregate(updates, importances)
+
         raise ValueError(f"Unsupported defense in this stage: {defense_name}")
 
     def run(self) -> Path:
@@ -188,14 +199,26 @@ class FedAvgServer:
         with JsonlWriter(log_path) as writer:
             for round_idx in range(1, int(self.config["training"]["rounds"]) + 1):
                 selected_clients = self._select_clients()
+                clients = [self._make_client(client_id) for client_id in selected_clients]
+                importances = None
+                if self.fdcr_defense is not None:
+                    importances = [
+                        estimate_fisher_importance(
+                            self.model,
+                            client.dataloader,
+                            self.device,
+                            fisher_batches=self.fdcr_defense.fisher_batches,
+                        )
+                        for client in clients
+                    ]
                 results = [
-                    self._make_client(client_id).train(
+                    client.train(
                         self.model,
                         local_epochs=int(self.config["training"]["local_epochs"]),
                         lr=float(self.config["training"]["lr"]),
                         momentum=float(self.config["training"].get("momentum", 0.0)),
                     )
-                    for client_id in selected_clients
+                    for client in clients
                 ]
                 if self.attack is not None:
                     for result in results:
@@ -213,7 +236,7 @@ class FedAvgServer:
                                 self.global_state_history,
                             )
 
-                update = self._aggregate_updates(results)
+                update = self._aggregate_updates(results, importances=importances)
                 apply_update(self.model, update)
                 self.global_state_history.append(self._snapshot_state())
 

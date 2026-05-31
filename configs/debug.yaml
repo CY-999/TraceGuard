@@ -54,3 +54,7 @@ defense:
   trigger_alpha: 0.2
   target_label: 0
   hardening_ratio: 0.5
+  fisher_batches: 1
+  discrepancy_metric: cosine
+  tau: 4.0
+  rescale_strength: 0.5
