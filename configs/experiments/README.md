@@ -4,6 +4,21 @@ These YAML files are templates for the main CIFAR-10, CIFAR-100, and Tiny-ImageN
 
 They do not automatically download data. Prepare each dataset under the configured `dataset.data_dir` before running an experiment.
 
+Tiny-ImageNet should use the common local layout:
+
+```text
+data/tiny-imagenet-200/
+  train/
+    n01443537/
+      images/
+        xxx.JPEG
+  val/
+    images/
+      xxx.JPEG
+    val_annotations.txt
+  wnids.txt
+```
+
 Example:
 
 ```bash
