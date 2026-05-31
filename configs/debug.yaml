@@ -34,6 +34,10 @@ attack:
   trigger_value: 1.0
   mask_ratio: 0.2
   history_window: 5
+  adaptive_steps: 5
+  trigger_alpha: 0.2
+  trigger_lr: 0.05
+  dynamics_perturb_steps: 1
 
 defense:
   name: fedavg

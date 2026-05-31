@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset, Subset
 
 from traceguard.aggregation.fedavg import apply_update, fedavg
+from traceguard.attacks.a3fl import A3FLAttack
 from traceguard.attacks.dba import DBAAttack
 from traceguard.attacks.model_replacement import ModelReplacementAttack
 from traceguard.attacks.neurotoxin import NeurotoxinAttack
@@ -60,6 +61,8 @@ class FedAvgServer:
             return DBAAttack.from_config(self.config)
         if attack_name == "neurotoxin":
             return NeurotoxinAttack.from_config(self.config)
+        if attack_name == "a3fl":
+            return A3FLAttack.from_config(self.config)
         raise ValueError(f"Unsupported attack in this stage: {attack_name}")
 
     def _num_workers(self) -> int:
@@ -70,7 +73,17 @@ class FedAvgServer:
     def _make_client(self, client_id: int) -> FLClient:
         dataset = Subset(self.train_dataset, self.partitions[client_id])
         if client_id in self.malicious_client_ids and self.attack is not None:
-            dataset = self.attack.poison_dataset(dataset, client_id=client_id)
+            if hasattr(self.attack, "poison_dataset_with_model"):
+                dataset = self.attack.poison_dataset_with_model(
+                    dataset,
+                    client_id=client_id,
+                    global_model=self.model,
+                    device=self.device,
+                    batch_size=int(self.config["dataset"]["batch_size"]),
+                    num_workers=self._num_workers(),
+                )
+            else:
+                dataset = self.attack.poison_dataset(dataset, client_id=client_id)
         loader = DataLoader(
             dataset,
             batch_size=int(self.config["dataset"]["batch_size"]),
