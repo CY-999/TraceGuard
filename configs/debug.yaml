@@ -44,3 +44,7 @@ defense:
   num_byzantine: null
   num_selected: null
   trim_ratio: null
+  clip_norm: null
+  noise_std: 0.0
+  cluster_method: agglomerative
+  cluster_metric: cosine

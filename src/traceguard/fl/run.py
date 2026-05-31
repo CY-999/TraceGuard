@@ -109,9 +109,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise ValueError(
             "Only attack=none, attack=model_replacement, attack=dba, attack=neurotoxin, and attack=a3fl are supported in this stage."
         )
-    if config["defense"]["name"] not in {"fedavg", "multi_krum", "trimmed_mean"}:
+    if config["defense"]["name"] not in {"fedavg", "multi_krum", "trimmed_mean", "flame"}:
         raise ValueError(
-            "Only defense=fedavg, defense=multi_krum, and defense=trimmed_mean are supported in this stage"
+            "Only defense=fedavg, defense=multi_krum, defense=trimmed_mean, and defense=flame are supported in this stage"
         )
 
     seed_everything(int(config["training"]["seed"]))

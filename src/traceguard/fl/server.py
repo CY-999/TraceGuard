@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset, Subset
 
 from traceguard.aggregation.fedavg import apply_update, fedavg
+from traceguard.aggregation.flame import flame
 from traceguard.aggregation.multi_krum import multi_krum
 from traceguard.aggregation.trimmed_mean import trimmed_mean
 from traceguard.attacks.a3fl import A3FLAttack
@@ -138,6 +139,16 @@ class FedAvgServer:
                 updates,
                 trim_ratio=defense_cfg.get("trim_ratio"),
                 num_byzantine=num_byzantine,
+            )
+
+        if defense_name == "flame":
+            defense_cfg = self.config.get("defense", {})
+            return flame(
+                updates,
+                clip_norm=defense_cfg.get("clip_norm"),
+                noise_std=float(defense_cfg.get("noise_std", 0.0)),
+                cluster_method=str(defense_cfg.get("cluster_method", "agglomerative")),
+                cluster_metric=str(defense_cfg.get("cluster_metric", "cosine")),
             )
 
         raise ValueError(f"Unsupported defense in this stage: {defense_name}")
