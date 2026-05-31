@@ -17,6 +17,7 @@ from traceguard.attacks.a3fl import A3FLAttack
 from traceguard.attacks.dba import DBAAttack
 from traceguard.attacks.model_replacement import ModelReplacementAttack
 from traceguard.attacks.neurotoxin import NeurotoxinAttack
+from traceguard.defenses.flip import FLIPDefense
 from traceguard.fl.client import FLClient
 from traceguard.metrics.classification import attack_success_rate, clean_accuracy
 from traceguard.utils.jsonl import JsonlWriter
@@ -47,6 +48,11 @@ class FedAvgServer:
             else set()
         )
         self.global_state_history = [self._snapshot_state()]
+        self.flip_defense = (
+            FLIPDefense.from_config(config)
+            if config.get("defense", {}).get("name", "fedavg").lower() == "flip"
+            else None
+        )
 
     def _snapshot_state(self) -> dict[str, torch.Tensor]:
         return {
@@ -75,6 +81,7 @@ class FedAvgServer:
 
     def _make_client(self, client_id: int) -> FLClient:
         dataset = Subset(self.train_dataset, self.partitions[client_id])
+        is_malicious = client_id in self.malicious_client_ids
         if client_id in self.malicious_client_ids and self.attack is not None:
             if hasattr(self.attack, "poison_dataset_with_model"):
                 dataset = self.attack.poison_dataset_with_model(
@@ -87,13 +94,27 @@ class FedAvgServer:
                 )
             else:
                 dataset = self.attack.poison_dataset(dataset, client_id=client_id)
+        hardening = None
+        if self.flip_defense is not None and not is_malicious:
+            hardening = self.flip_defense.build_client_hardening(
+                global_model=self.model,
+                dataset=dataset,
+                batch_size=int(self.config["dataset"]["batch_size"]),
+                num_workers=self._num_workers(),
+                device=self.device,
+            )
         loader = DataLoader(
             dataset,
             batch_size=int(self.config["dataset"]["batch_size"]),
             shuffle=True,
             num_workers=self._num_workers(),
         )
-        return FLClient(client_id=client_id, dataloader=loader, device=self.device)
+        return FLClient(
+            client_id=client_id,
+            dataloader=loader,
+            device=self.device,
+            hardening=hardening,
+        )
 
     def _test_loader(self) -> DataLoader:
         return DataLoader(
@@ -114,6 +135,12 @@ class FedAvgServer:
         defense_name = self.config.get("defense", {}).get("name", "fedavg").lower()
         updates = [result.update for result in results]
         if defense_name == "fedavg":
+            return fedavg(
+                updates,
+                [result.num_samples for result in results],
+            )
+
+        if defense_name == "flip":
             return fedavg(
                 updates,
                 [result.num_samples for result in results],

@@ -24,10 +24,12 @@ class FLClient:
         client_id: int,
         dataloader: DataLoader,
         device: torch.device | str,
+        hardening=None,
     ) -> None:
         self.client_id = client_id
         self.dataloader = dataloader
         self.device = torch.device(device)
+        self.hardening = hardening
 
     def train(
         self,
@@ -53,6 +55,14 @@ class FLClient:
             for images, labels in self.dataloader:
                 images = images.to(self.device)
                 labels = labels.to(self.device)
+                if self.hardening is not None:
+                    hard_images, hard_labels = self.hardening.make_hardening_batch(
+                        images,
+                        labels,
+                    )
+                    if hard_images.numel() > 0:
+                        images = torch.cat([images, hard_images], dim=0)
+                        labels = torch.cat([labels, hard_labels], dim=0)
                 optimizer.zero_grad(set_to_none=True)
                 loss = criterion(local_model(images), labels)
                 loss.backward()
