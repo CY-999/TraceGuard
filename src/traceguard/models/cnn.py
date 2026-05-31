@@ -5,6 +5,8 @@ from __future__ import annotations
 import torch
 from torch import nn
 
+from traceguard.models.resnet import resnet18_cifar, resnet18_tiny
+
 
 class SimpleCNN(nn.Module):
     def __init__(self, num_classes: int = 10) -> None:
@@ -30,6 +32,14 @@ class SimpleCNN(nn.Module):
 
 def build_model(config: dict) -> nn.Module:
     name = config.get("model", {}).get("name", "simple_cnn").lower()
-    if name != "simple_cnn":
-        raise ValueError(f"Only simple_cnn is supported in this stage, got: {name}")
-    return SimpleCNN(num_classes=int(config.get("model", {}).get("num_classes", 10)))
+    num_classes = int(config.get("model", {}).get("num_classes", 10))
+    if name == "simple_cnn":
+        return SimpleCNN(num_classes=num_classes)
+    if name == "resnet18_cifar":
+        return resnet18_cifar(num_classes=num_classes)
+    if name == "resnet18_tiny":
+        return resnet18_tiny(num_classes=num_classes)
+    raise ValueError(
+        "Unknown model.name. Supported models are: simple_cnn, "
+        f"resnet18_cifar, resnet18_tiny. Got: {name}"
+    )

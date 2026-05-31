@@ -182,7 +182,7 @@ class FDCRDefense:
         return cls(
             fisher_batches=int(defense_cfg.get("fisher_batches", 1)),
             discrepancy_metric=str(defense_cfg.get("discrepancy_metric", "cosine")),
-            tau=float(defense_cfg.get("tau", 4.0)),
+            tau=float(defense_cfg.get("fdcr_tau", 4.0)),
             rescale_strength=float(defense_cfg.get("rescale_strength", 0.5)),
         )
 

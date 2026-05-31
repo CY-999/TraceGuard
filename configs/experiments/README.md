@@ -27,6 +27,16 @@ python -m traceguard.fl.run --config configs/experiments/cifar10_dba.yaml
 
 Main experiments use a single default seed, `seed=123`. The provided runner does not generate multi-seed repeats by default; `--seed` is available only for temporary overrides.
 
+Main experiments use dataset-specific ResNet-18 variants trained from scratch. No ImageNet pretrained weights are used or downloaded.
+
+- CIFAR-10 uses `resnet18_cifar` for 200 rounds.
+- CIFAR-100 uses `resnet18_cifar` for 300 rounds.
+- Tiny-ImageNet uses `resnet18_tiny` for 300 rounds.
+
+`simple_cnn` is reserved for sanity/debug runs.
+
+Main experiments use 10 malicious clients out of 100 by default, with `attack.poison_ratio=0.5`. Appendix sensitivity can vary poison ratio over `0.1/0.3/1.0` and malicious ratio over `4%/20%/30%`.
+
 Main defense baselines can be selected with CLI overrides:
 
 ```bash
@@ -63,6 +73,8 @@ Main defense baselines:
 - `traceguard`
 
 TRACEGuard is executed on the server side through a secret probe bank, update response auditor, and robust admission controller. It does not require or use client-side local purification.
+
+Tau configuration is method-specific: `traceguard.tau` controls TRACEGuard admission, while `defense.fdcr_tau` controls FDCR-style weighting.
 
 Experiment outputs are saved under `outputs/<dataset>/<attack>/<defense>/seed_<seed>/` by default. The `outputs/` directory should not be committed to git.
 
