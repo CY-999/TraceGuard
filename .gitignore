@@ -1,0 +1,15 @@
+data/
+results/
+outputs/
+checkpoints/
+runs/
+wandb/
+*.pt
+*.pth
+*.ckpt
+*.zip
+*.tar
+*.tar.gz
+*.log
+__pycache__/
+.pytest_cache/
