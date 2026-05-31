@@ -43,3 +43,4 @@ defense:
   name: fedavg
   num_byzantine: null
   num_selected: null
+  trim_ratio: null

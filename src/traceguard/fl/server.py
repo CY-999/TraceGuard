@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader, Dataset, Subset
 
 from traceguard.aggregation.fedavg import apply_update, fedavg
 from traceguard.aggregation.multi_krum import multi_krum
+from traceguard.aggregation.trimmed_mean import trimmed_mean
 from traceguard.attacks.a3fl import A3FLAttack
 from traceguard.attacks.dba import DBAAttack
 from traceguard.attacks.model_replacement import ModelReplacementAttack
@@ -126,6 +127,17 @@ class FedAvgServer:
                 updates,
                 num_byzantine=int(num_byzantine),
                 num_selected=defense_cfg.get("num_selected"),
+            )
+
+        if defense_name == "trimmed_mean":
+            defense_cfg = self.config.get("defense", {})
+            num_byzantine = defense_cfg.get("num_byzantine")
+            if defense_cfg.get("trim_ratio") is None and num_byzantine is None:
+                num_byzantine = self.config.get("attack", {}).get("num_malicious", 0)
+            return trimmed_mean(
+                updates,
+                trim_ratio=defense_cfg.get("trim_ratio"),
+                num_byzantine=num_byzantine,
             )
 
         raise ValueError(f"Unsupported defense in this stage: {defense_name}")
