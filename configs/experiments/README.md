@@ -52,6 +52,20 @@ Supported main datasets:
 - `cifar100`
 - `tinyimagenet`
 
+Main defense baselines:
+
+- `fedavg`
+- `multi_krum`
+- `trimmed_mean`
+- `flame`
+- `flip`
+- `fdcr`
+- `traceguard`
+
+TRACEGuard is executed on the server side through a secret probe bank, update response auditor, and robust admission controller. It does not require or use client-side local purification.
+
+Experiment outputs are saved under `outputs/` by default. The `outputs/` directory should not be committed to git.
+
 ## Experiment Matrix Script
 
 Generate a single command without running it:

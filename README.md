@@ -25,3 +25,60 @@ python -m traceguard.fl.run --config configs/default.yaml --dataset cifar100 --d
 ```
 
 Configuration is loaded from `configs/default.yaml` by default. Passing `--config` deep-merges the selected YAML over the default. Passing `--debug` without `--config` deep-merges `configs/debug.yaml` over the default. CLI flags are applied last.
+
+## Main Experiments
+
+Main-paper experiment templates live in `configs/experiments/`.
+
+Datasets:
+
+- CIFAR-10
+- CIFAR-100
+- Tiny-ImageNet
+
+Attacks:
+
+- `model_replacement`
+- `dba`
+- `neurotoxin`
+- `a3fl`
+
+Defenses:
+
+- `fedavg`
+- `multi_krum`
+- `trimmed_mean`
+- `flame`
+- `flip`
+- `fdcr`
+- `traceguard`
+
+The default seed is fixed to `123`. Data is not downloaded automatically; prepare CIFAR-10, CIFAR-100, and Tiny-ImageNet under `dataset.data_dir`.
+
+Single experiment dry-run:
+
+```bash
+python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --dry-run
+```
+
+Single experiment run:
+
+```bash
+python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --run
+```
+
+Full CIFAR-10 matrix dry-run:
+
+```bash
+python scripts/run_main_experiments.py --dataset cifar10 --dry-run
+```
+
+Collect results:
+
+```bash
+python scripts/collect_results.py --results-dir outputs --output outputs/summary.csv
+```
+
+See `docs/experiment_plan.md` for the full experiment plan and Tiny-ImageNet directory layout. Results are saved under `outputs/`, which should not be committed to git.
+
+TRACEGuard runs entirely on the server side: secret probe bank, update response auditor, and robust admission controller. It does not use client-side local purification.
