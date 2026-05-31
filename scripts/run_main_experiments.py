@@ -40,7 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dataset", choices=DATASETS)
     parser.add_argument("--attack", choices=ATTACKS)
     parser.add_argument("--defense", choices=DEFENSES)
-    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=123)
     parser.add_argument(
         "--dry-run",
         action="store_true",

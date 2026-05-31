@@ -10,6 +10,8 @@ Example:
 python -m traceguard.fl.run --config configs/experiments/cifar10_dba.yaml
 ```
 
+Main experiments use a single default seed, `seed=123`. The provided runner does not generate multi-seed repeats by default; `--seed` is available only for temporary overrides.
+
 Main defense baselines can be selected with CLI overrides:
 
 ```bash
@@ -34,13 +36,13 @@ Main attack baselines:
 Generate a single command without running it:
 
 ```bash
-python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --seed 0 --dry-run
+python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --dry-run
 ```
 
 Run that single experiment explicitly:
 
 ```bash
-python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --seed 0 --run
+python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --run
 ```
 
 If `--attack` or `--defense` is omitted, the script prints the corresponding main-paper matrix. It still does not run anything unless `--run` is provided.
@@ -53,4 +55,4 @@ Collect all `metrics.jsonl` files under `outputs/` into a run-level CSV and an a
 python scripts/collect_results.py --results-dir outputs --output outputs/summary.csv
 ```
 
-This also writes `outputs/summary_avg.csv`, grouped by `dataset`, `attack`, and `defense`.
+This also writes `outputs/summary_avg.csv`, grouped by `dataset`, `attack`, and `defense`. The averaged CSV is mainly for future runs where multiple seeds are needed.

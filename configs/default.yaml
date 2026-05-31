@@ -25,7 +25,7 @@ training:
   local_epochs: 1
   lr: 0.01
   momentum: 0.9
-  seed: 42
+  seed: 123
 
 model:
   name: simple_cnn
