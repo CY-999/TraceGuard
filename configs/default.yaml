@@ -38,6 +38,9 @@ attack:
   poison_ratio: 0.1
   trigger_type: patch
   scale_factor: 1.0
+  fragment_layout: four_corners
+  trigger_size: 4
+  trigger_value: 1.0
 
 defense:
   name: fedavg

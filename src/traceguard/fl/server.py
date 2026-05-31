@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset, Subset
 
 from traceguard.aggregation.fedavg import apply_update, fedavg
+from traceguard.attacks.dba import DBAAttack
 from traceguard.attacks.model_replacement import ModelReplacementAttack
 from traceguard.fl.client import FLClient
 from traceguard.metrics.classification import attack_success_rate, clean_accuracy
@@ -47,6 +48,8 @@ class FedAvgServer:
             return None
         if attack_name == "model_replacement":
             return ModelReplacementAttack.from_config(self.config)
+        if attack_name == "dba":
+            return DBAAttack.from_config(self.config)
         raise ValueError(f"Unsupported attack in this stage: {attack_name}")
 
     def _num_workers(self) -> int:
@@ -100,7 +103,10 @@ class FedAvgServer:
                 ]
                 if self.attack is not None:
                     for result in results:
-                        if result.client_id in self.malicious_client_ids:
+                        if (
+                            result.client_id in self.malicious_client_ids
+                            and hasattr(self.attack, "scale_update")
+                        ):
                             result.update = self.attack.scale_update(result.update)
 
                 update = fedavg(

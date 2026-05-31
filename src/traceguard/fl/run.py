@@ -105,9 +105,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(dump_config(config), end="")
         return 0
 
-    if config["attack"]["name"] not in {"none", "model_replacement"}:
+    if config["attack"]["name"] not in {"none", "model_replacement", "dba"}:
         raise ValueError(
-            "Only attack=none and attack=model_replacement are supported in this stage."
+            "Only attack=none, attack=model_replacement, and attack=dba are supported in this stage."
         )
     if config["defense"]["name"] != "fedavg":
         raise ValueError("Only defense=fedavg is supported in this stage")

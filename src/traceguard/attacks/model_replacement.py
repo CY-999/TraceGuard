@@ -61,7 +61,10 @@ class PoisonedDataset(Dataset):
             if int(label) != self.target_label:
                 candidate_indices.append(idx)
 
-        num_poison = int(round(len(candidate_indices) * poison_ratio))
+        num_poison = min(
+            len(candidate_indices),
+            int(round(len(dataset) * poison_ratio)),
+        )
         rng = np.random.default_rng(seed)
         selected = rng.choice(candidate_indices, size=num_poison, replace=False) if num_poison else []
         self.poison_indices = set(int(idx) for idx in selected)
@@ -116,4 +119,4 @@ class ModelReplacementAttack:
         )
 
     def scale_update(self, update: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        return {key: value * self.scale_factor for key, value in update.items()}
+        return {key: value * float(self.scale_factor) for key, value in update.items()}
