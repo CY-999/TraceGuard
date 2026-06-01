@@ -45,6 +45,13 @@ def traceguard_aggregate(
 
     aggregated: Update = {}
     for key in updates[0]:
+        # TRACEGuard admission weights apply to floating-point model updates.
+        # Non-floating buffers such as BatchNorm num_batches_tracked are
+        # metadata/counters and are not numerically aggregated; apply_update
+        # preserves the server/global value for those keys.
+        if not torch.is_floating_point(updates[0][key]):
+            aggregated[key] = updates[0][key].detach().clone()
+            continue
         value = torch.zeros_like(updates[0][key])
         for update, weight in zip(updates, weights):
             value = value + update[key] * (float(weight.item()) / total_weight)

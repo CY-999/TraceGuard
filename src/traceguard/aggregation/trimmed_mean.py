@@ -56,6 +56,12 @@ def trimmed_mean(
 
     aggregated: Update = {}
     for key in updates[0]:
+        # Trimmed Mean is coordinate-wise over floating-point gradients/updates.
+        # Non-floating buffers such as BatchNorm num_batches_tracked are
+        # metadata and must not be sorted, trimmed, or averaged.
+        if not torch.is_floating_point(updates[0][key]):
+            aggregated[key] = updates[0][key].detach().clone()
+            continue
         stacked = torch.stack([update[key].detach().clone() for update in updates], dim=0)
         if b == 0:
             aggregated[key] = stacked.mean(dim=0)

@@ -14,7 +14,14 @@ def flatten_update(update: Update) -> torch.Tensor:
     """Flatten a model update dict into one vector without mutating it."""
     if not update:
         raise ValueError("Cannot flatten an empty update")
-    return torch.cat([tensor.detach().reshape(-1).float() for tensor in update.values()])
+    pieces = [
+        tensor.detach().reshape(-1).float()
+        for tensor in update.values()
+        if torch.is_floating_point(tensor)
+    ]
+    if not pieces:
+        raise ValueError("Update contains no floating-point tensors to flatten")
+    return torch.cat(pieces)
 
 
 def _mean_updates(updates: list[Update]) -> Update:
@@ -22,6 +29,12 @@ def _mean_updates(updates: list[Update]) -> Update:
         raise ValueError("Cannot average an empty update list")
     averaged: Update = {}
     for key in updates[0]:
+        # Multi-Krum is defined over floating-point update vectors. Non-floating
+        # buffers are metadata and are kept only as placeholders; apply_update
+        # preserves the server/global value for them.
+        if not torch.is_floating_point(updates[0][key]):
+            averaged[key] = updates[0][key].detach().clone()
+            continue
         value = torch.zeros_like(updates[0][key])
         for update in updates:
             value = value + update[key]

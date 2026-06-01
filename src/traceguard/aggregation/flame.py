@@ -15,7 +15,14 @@ Update = dict[str, torch.Tensor]
 def flatten_update(update: Update) -> torch.Tensor:
     if not update:
         raise ValueError("Cannot flatten an empty update")
-    return torch.cat([tensor.detach().reshape(-1).float().cpu() for tensor in update.values()])
+    pieces = [
+        tensor.detach().reshape(-1).float().cpu()
+        for tensor in update.values()
+        if torch.is_floating_point(tensor)
+    ]
+    if not pieces:
+        raise ValueError("Update contains no floating-point tensors to flatten")
+    return torch.cat(pieces)
 
 
 def compute_pairwise_cosine_distances(flat_updates: torch.Tensor) -> torch.Tensor:
@@ -66,7 +73,13 @@ def cluster_updates(
 
 
 def _update_l2_norm(update: Update) -> torch.Tensor:
-    pieces = [tensor.detach().reshape(-1).float() for tensor in update.values()]
+    # FLAME distances/norms are defined over floating-point update vectors.
+    # Non-floating buffers are metadata and excluded.
+    pieces = [
+        tensor.detach().reshape(-1).float()
+        for tensor in update.values()
+        if torch.is_floating_point(tensor)
+    ]
     if not pieces:
         return torch.tensor(0.0)
     return torch.linalg.vector_norm(torch.cat(pieces), ord=2)
@@ -87,7 +100,16 @@ def clip_updates_by_norm(
     clipped: list[Update] = []
     for update, norm in zip(updates, norms):
         scale = min(1.0, bound / (float(norm.item()) + 1e-12))
-        clipped.append({key: value.detach().clone() * scale for key, value in update.items()})
+        clipped.append(
+            {
+                key: (
+                    value.detach().clone() * scale
+                    if torch.is_floating_point(value)
+                    else value.detach().clone()
+                )
+                for key, value in update.items()
+            }
+        )
     return clipped
 
 
@@ -96,6 +118,9 @@ def _mean_updates(updates: list[Update]) -> Update:
         raise ValueError("Cannot average an empty update list")
     averaged: Update = {}
     for key in updates[0]:
+        if not torch.is_floating_point(updates[0][key]):
+            averaged[key] = updates[0][key].detach().clone()
+            continue
         value = torch.zeros_like(updates[0][key])
         for update in updates:
             value = value + update[key]
@@ -113,7 +138,11 @@ def add_gaussian_noise(
     if noise_std == 0.0:
         return {key: value.detach().clone() for key, value in update.items()}
     return {
-        key: value.detach().clone() + torch.randn_like(value) * noise_std
+        key: (
+            value.detach().clone() + torch.randn_like(value) * noise_std
+            if torch.is_floating_point(value)
+            else value.detach().clone()
+        )
         for key, value in update.items()
     }
 

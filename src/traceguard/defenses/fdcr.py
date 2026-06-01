@@ -124,6 +124,12 @@ def _weighted_average_updates(
 
     averaged: Update = {}
     for key in updates[0]:
+        # FDCR weights are applied to floating-point update coordinates.
+        # Non-floating buffers are metadata and are left as placeholders;
+        # apply_update preserves the server/global value for them.
+        if not torch.is_floating_point(updates[0][key]):
+            averaged[key] = updates[0][key].detach().clone()
+            continue
         value = torch.zeros_like(updates[0][key])
         for update, weight in zip(updates, weights):
             value = value + update[key] * (float(weight.item()) / weight_sum)
