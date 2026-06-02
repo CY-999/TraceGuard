@@ -1,4 +1,4 @@
-"""Generate paper-ready TRACEGuard result tables and curves from JSONL metrics."""
+"""Generate paper-ready ASAGuard result tables and curves from JSONL metrics."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ DEFENSE_ORDER = [
     "flame",
     "flip",
     "fdcr",
-    "traceguard",
+    "asaguard",
 ]
 
 DEFENSE_LABELS = {
@@ -56,7 +56,7 @@ DEFENSE_LABELS = {
     "flame": "FLAME",
     "flip": "FLIP",
     "fdcr": "FDCR",
-    "traceguard": "TRACEGuard",
+    "asaguard": "ASAGuard",
 }
 
 DEFENSE_COLORS = {
@@ -66,7 +66,7 @@ DEFENSE_COLORS = {
     "flame": "#72B7B2",
     "flip": "#54A24B",
     "fdcr": "#B279A2",
-    "traceguard": "#000000",
+    "asaguard": "#000000",
 }
 
 KNOWN_ATTACKS = set(ATTACK_LABELS)
@@ -93,7 +93,7 @@ class RunMetrics:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Generate paper-ready TRACEGuard tables and curves from metrics.jsonl files.",
+        description="Generate paper-ready ASAGuard tables and curves from metrics.jsonl files.",
     )
     parser.add_argument("--results-dir", default="outputs", help="Experiment output root.")
     parser.add_argument(
@@ -447,7 +447,7 @@ def plot_metric(
             smoothed,
             label=DEFENSE_LABELS.get(defense, defense),
             color=DEFENSE_COLORS.get(defense, "#777777"),
-            linewidth=2.0 if defense == "traceguard" else 1.6,
+            linewidth=2.0 if defense == "asaguard" else 1.6,
         )
 
 
@@ -534,7 +534,7 @@ def analyze_pair(
     complete_runs = [run for run in pair_runs if run.complete]
     output_dir = analysis_dir / dataset / attack
     stale_outputs = [
-        output_dir / "traceguard_diagnostics.csv",
+        output_dir / "asaguard_diagnostics.csv",
         output_dir / "model_replacement_final_bars.png",
     ]
     for stale_output in stale_outputs:
