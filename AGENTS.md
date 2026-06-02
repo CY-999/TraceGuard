@@ -1,9 +1,9 @@
-# TRACEGuard Coding Instructions
+# ASAGuard Coding Instructions
 
 ## Project Goal
-Implement TRACEGuard: Server-Side Trigger-Family Auditing for Federated Backdoor Defense.
+Implement ASAGuard: Association-Safe Aggregation for Federated Backdoor Defense.
 
-TRACEGuard is a server-side functional auditing framework. It is NOT a client-side sample filtering method.
+ASAGuard is a server-side trigger-target functional association editing framework. It is NOT a client-side sample filtering method.
 
 ## Forbidden Components
 Do NOT implement:
@@ -14,25 +14,29 @@ Do NOT implement:
 - blockchain
 - LLM module
 - multi-signal weighted risk score
+- client risk scoring, admission control, downweighting, or rejection as the ASAGuard method
 
 ## Core Method
-TRACEGuard consists of:
-1. Trigger-Family Probe Bank
-2. Update Response Auditor
-3. Robust Admission Controller
+ASAGuard consists of:
+1. Counterfactual Probe Bank
+2. Backdoor-Sensitive Subspace Estimator
+3. Association-Safe Projection Aggregator
 
-The core risk score is Paired Trigger Amplification Score:
+The target margin is:
 
-A_i(x,f) =
-[M_y(T_f(x); w_t + Δw_i) - M_y(T_f(x); w_t)]
--
-[M_y(x; w_t + Δw_i) - M_y(x; w_t)]
+M_y(x; w) = z_y(x; w) - max_{c != y} z_c(x; w)
 
-R_i = median_{x,f} A_i(x,f)
+The sensitive direction is:
 
-Admission:
-z_i = (R_i - median_j R_j) / (MAD_j(R_j) + eps)
-a_i = clip(1 - z_i / tau, 0, 1)
+q_{x,f,y} = grad_w M_y(T_f(x); w_t) - grad_w M_y(x; w_t)
+
+The core projection is:
+
+Delta_i_perp = Delta_i - U_t (U_t^T Delta_i)
+
+Aggregation:
+
+w_{t+1} = w_t + mean_i Delta_i_perp
 
 ## Main Datasets
 - CIFAR-10
@@ -52,7 +56,7 @@ a_i = clip(1 - z_i / tau, 0, 1)
 - FLAME
 - FLIP
 - FDCR
-- TRACEGuard
+- ASAGuard
 
 ## Engineering Rules
 - Keep code modular and config-driven.

@@ -1,14 +1,8 @@
-# TRACEGuard
+# ASAGuard
 
-TRACEGuard is a server-side trigger-family functional auditing framework for federated backdoor defense.
+ASAGuard is a server-side association-safe aggregation framework for federated backdoor defense.
 
-This repository implements the final TRACEGuard design described in `docs/TRACEGuard_final_design.md`.
-
-## Core Principle
-
-TRACEGuard does not rely on client-side local filtering or purification. It audits submitted client updates on the server side before aggregation.
-
-This initial scaffold provides only the Python package layout, YAML configuration loading, and a minimal CLI. It intentionally does not implement training, attacks, defense baselines, or the TRACEGuard method yet.
+The method does not identify malicious clients, score client risk, downweight updates, or reject clients. It estimates a trigger-target sensitive functional subspace from server-side clean/trigger counterfactual probes, projects every submitted update onto that subspace's orthogonal complement, then averages the projected updates.
 
 ## Install
 
@@ -19,9 +13,9 @@ pip install -e .
 ## CLI
 
 ```bash
-python -m traceguard.fl.run --help
-python -m traceguard.fl.run --debug --print-config
-python -m traceguard.fl.run --config configs/default.yaml --dataset cifar100 --defense traceguard --print-config
+python -m asaguard.fl.run --help
+python -m asaguard.fl.run --debug --print-config
+python -m asaguard.fl.run --config configs/default.yaml --dataset cifar100 --defense asaguard --print-config
 ```
 
 Configuration is loaded from `configs/default.yaml` by default. Passing `--config` deep-merges the selected YAML over the default. Passing `--debug` without `--config` deep-merges `configs/debug.yaml` over the default. CLI flags are applied last.
@@ -29,8 +23,6 @@ Configuration is loaded from `configs/default.yaml` by default. Passing `--confi
 ## Main Experiments
 
 Main-paper experiment templates live in `configs/experiments/`.
-
-CPU runs are intended only for code-connectivity checks such as the sanity smoke config. Main-paper experiments should be run on GPU.
 
 Datasets:
 
@@ -53,46 +45,28 @@ Defenses:
 - `flame`
 - `flip`
 - `fdcr`
-- `traceguard`
+- `asaguard`
 
-The default seed is fixed to `123`. Data is not downloaded automatically; prepare CIFAR-10, CIFAR-100, and Tiny-ImageNet under `dataset.data_dir`.
+Data is not downloaded automatically; prepare CIFAR-10, CIFAR-100, and Tiny-ImageNet under `dataset.data_dir`. CPU runs are intended only for code-connectivity checks; main-paper experiments should run on GPU.
 
-Main-paper defaults:
-
-- CIFAR-10: `resnet18_cifar`, 200 rounds
-- CIFAR-100: `resnet18_cifar`, 300 rounds
-- Tiny-ImageNet: `resnet18_tiny`, 300 rounds
-- `seed=123`
-- 100 clients
-- 10 clients per round
-- 10 malicious clients
-- `poison_ratio=0.5`
-- Dirichlet non-IID `alpha=0.5`
+ASAGuard uses a server-side clean reference buffer reserved from the clean training split before client partitioning or attack injection. Reference samples are removed from the federated client training pool for every defense, so baselines and ASAGuard share the same remaining client data. The test set is used only for evaluation and must never be used for defense-time probe construction.
 
 Single GPU experiment:
 
 ```bash
-python -m traceguard.fl.run --config configs/experiments/cifar10_dba.yaml --defense traceguard
+python -m asaguard.fl.run --config configs/experiments/cifar10_dba.yaml --defense asaguard
 ```
 
 Single experiment dry-run:
 
 ```bash
-python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --dry-run
+python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense asaguard --dry-run
 ```
 
 Single experiment run:
 
 ```bash
-python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --run
-```
-
-GPU resources are usually limited, so run formal experiments one tuple at a time. The runner refuses `--run` unless `--dataset`, `--attack`, and `--defense` are all specified. Use dry-run to inspect larger matrices first.
-
-Full CIFAR-10 matrix dry-run:
-
-```bash
-python scripts/run_main_experiments.py --dataset cifar10 --dry-run
+python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense asaguard --run
 ```
 
 Collect results:
@@ -101,20 +75,20 @@ Collect results:
 python scripts/collect_results.py --results-dir outputs --output outputs/summary.csv
 ```
 
-Collect CIFAR-10 results:
-
-```bash
-python scripts/collect_results.py --results-dir outputs --output outputs/cifar10_summary.csv
-```
-
 Sanity dry-run for one fakedata combination:
 
 ```bash
-python scripts/run_sanity_matrix.py --attack dba --defense traceguard --dry-run
+python scripts/run_sanity_matrix.py --attack dba --defense asaguard --dry-run
 ```
 
-See `docs/experiment_plan.md` for the full experiment plan and Tiny-ImageNet directory layout. Results are saved under `outputs/<dataset>/<attack>/<defense>/seed_<seed>/`, and `outputs/` should not be committed to git.
+Results are saved under `outputs/<dataset>/<attack>/<defense>/seed_<seed>/`, and `outputs/` should not be committed to git.
 
-TRACEGuard runs entirely on the server side: secret probe bank, update response auditor, and robust admission controller. It does not use client-side local purification.
+## ASAGuard Metrics
 
-Tau configuration is separated by method: `traceguard.tau` controls TRACEGuard admission, while `defense.fdcr_tau` controls FDCR-style weighting.
+ASAGuard writes mechanism metrics to `metrics.jsonl`:
+
+- `asaguard_ac_mean_before`
+- `asaguard_ac_mean_after`
+- `asaguard_projected_energy_ratio_mean`
+- `asaguard_subspace_rank`
+- `asaguard_num_q_vectors`

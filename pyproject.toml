@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "traceguard"
+name = "asaguard"
 version = "0.1.0"
-description = "Server-side trigger-family auditing scaffold for federated backdoor defense."
+description = "Association-safe aggregation for federated backdoor defense."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-traceguard-run = "traceguard.fl.run:main"
+asaguard-run = "asaguard.fl.run:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

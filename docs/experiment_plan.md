@@ -1,4 +1,4 @@
-# TRACEGuard Main Experiment Plan
+# ASAGuard Main Experiment Plan
 
 This document summarizes the main-paper experiment matrix and the commands used to generate, run, and collect results.
 
@@ -40,7 +40,7 @@ data/tiny-imagenet-200/
 - `flame`
 - `flip`
 - `fdcr`
-- `traceguard`
+- `ASAGuard`
 
 ## Default Seed
 
@@ -71,14 +71,15 @@ attack.num_malicious = 10
 attack.poison_ratio = 0.5
 ```
 
-`attack.num_malicious` is the total number of malicious clients in the full federation. Robust aggregation baselines use a per-round Byzantine bound:
+`attack.num_malicious` is the total number of malicious clients in the full federation. Robust aggregation baselines use method-specific per-round Byzantine bounds:
 
 ```text
-defense.num_byzantine = 2
-defense.trim_ratio = null
+multi_krum.num_byzantine = 2
+trimmed_mean.num_byzantine = 2
+trimmed_mean.trim_ratio = null
 ```
 
-For the main setting, there are 100 total clients, 10 clients per round, and 10 malicious clients globally. For Multi-Krum and Trimmed Mean, the main-paper configuration uses `defense.num_byzantine=2` as a per-round upper bound. This satisfies Multi-Krum's `n > 2f + 2` and Trimmed Mean's `2b < n` when `n=10`. The global malicious-client count should not be passed directly as the current-round Krum `f` or Trimmed Mean `b`.
+For the main setting, there are 100 total clients, 10 clients per round, and 10 malicious clients globally. For Multi-Krum and Trimmed Mean, the main-paper configuration uses `multi_krum.num_byzantine=2` and `trimmed_mean.num_byzantine=2` as per-round upper bounds. This satisfies Multi-Krum's `n > 2f + 2` and Trimmed Mean's `2b < n` when `n=10`. The global malicious-client count should not be passed directly as the current-round Krum `f` or Trimmed Mean `b`.
 
 Appendix sensitivity settings can include `poison_ratio=0.1/0.3/1.0` and malicious ratios `4%/20%/30%`.
 
@@ -87,13 +88,13 @@ Appendix sensitivity settings can include `poison_ratio=0.1/0.3/1.0` and malicio
 Single experiment dry-run:
 
 ```bash
-python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --dry-run
+python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense asaguard --dry-run
 ```
 
 Single experiment run:
 
 ```bash
-python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense traceguard --run
+python scripts/run_main_experiments.py --dataset cifar10 --attack dba --defense asaguard --run
 ```
 
 GPU resources are usually limited. Prefer running one experiment tuple at a time; the runner refuses `--run` unless `--dataset`, `--attack`, and `--defense` are all specified. Use dry-run for full matrix inspection.
@@ -115,7 +116,7 @@ The collector writes both `outputs/summary.csv` and `outputs/summary_avg.csv`.
 Single GPU experiment:
 
 ```bash
-python -m traceguard.fl.run --config configs/experiments/cifar10_dba.yaml --defense traceguard
+python -m asaguard.fl.run --config configs/experiments/cifar10_dba.yaml --defense asaguard
 ```
 
 Run the full CIFAR-10 main matrix:
@@ -144,13 +145,13 @@ The sanity runner generates tiny `fakedata` commands to check that main attack a
 Single combination dry-run:
 
 ```bash
-python scripts/run_sanity_matrix.py --attack dba --defense traceguard --dry-run
+python scripts/run_sanity_matrix.py --attack dba --defense asaguard --dry-run
 ```
 
 Single combination run:
 
 ```bash
-python scripts/run_sanity_matrix.py --attack dba --defense traceguard --run
+python scripts/run_sanity_matrix.py --attack dba --defense asaguard --run
 ```
 
 Full sanity matrix dry-run:
@@ -163,19 +164,20 @@ python scripts/run_sanity_matrix.py --dry-run
 
 Experiment outputs are saved under `outputs/<dataset>/<attack>/<defense>/seed_<seed>/` by default. This directory should not be committed to git.
 
-## TRACEGuard Runtime
+## ASAGuard Runtime
 
-TRACEGuard is a server-side functional auditing method. During aggregation, the server:
+ASAGuard is a server-side association-safe projection method. During aggregation, the server:
 
-1. Builds a secret trigger-family probe bank.
-2. Audits each client update with the update response auditor.
-3. Computes Paired Trigger Amplification Score.
-4. Converts risk scores into admission weights with the robust admission controller.
-5. Aggregates updates using those server-side admission weights.
+1. Builds clean/trigger counterfactual probes from the server-side reference data source.
+2. Computes target-margin gradient differences for the probe pairs.
+3. Orthonormalizes those q vectors into the sensitive subspace `U_t`.
+4. Projects every client update with `Delta_i_perp = Delta_i - U_t(U_t^T Delta_i)`.
+5. Averages the projected updates and applies the result to the global model.
 
-TRACEGuard does not use client-side local purification or sample filtering.
+ASAGuard does not use client-side local purification, sample filtering, client risk scoring, update downweighting, or client rejection.
 
 Configuration note:
 
-- `traceguard.tau` controls TRACEGuard admission.
-- `defense.fdcr_tau` controls FDCR-style discrepancy weighting.
+- `ASAGuard.subspace_rank` controls the maximum sensitive subspace dimension.
+- `asaguard.eps` controls numerical stabilizers for projection metrics.
+- `fdcr.tau` controls FDCR-style discrepancy weighting.

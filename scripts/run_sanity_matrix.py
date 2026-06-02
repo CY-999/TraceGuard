@@ -16,7 +16,7 @@ DEFENSES = (
     "flame",
     "flip",
     "fdcr",
-    "traceguard",
+    "asaguard",
 )
 
 
@@ -52,7 +52,7 @@ def generate_commands(args: argparse.Namespace) -> list[SanityCommand]:
             command = [
                 sys.executable,
                 "-m",
-                "traceguard.fl.run",
+                "asaguard.fl.run",
                 "--dataset",
                 "fakedata",
                 "--attack",

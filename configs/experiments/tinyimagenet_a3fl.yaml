@@ -28,19 +28,35 @@ attack:
   num_malicious: 10
   target_label: 0
   poison_ratio: 0.5
+  trigger_size: 4
+  trigger_alpha: 0.2
+  trigger_location: bottom_right
+  trigger_lr: 0.05
+  outer_steps: 20
+  trigger_steps: 1
+  adv_model_lr: 0.01
+  lambda0: 1.0
+  adv_model_steps: 1
 
 defense:
-  name: traceguard
+  name: asaguard
+
+multi_krum:
+  num_byzantine: 2
+  num_selected: null
+
+trimmed_mean:
   num_byzantine: 2
   trim_ratio: null
 
-traceguard:
+
+asaguard:
   num_probes: 64
   probe_families:
     - patch
     - blend_low_alpha
     - frequency_sine
     - warping
-  tau: 4.0
-  reference_per_class: 5
+  subspace_rank: 4
+  eps: 1.0e-12
   adaptive_steps: 5

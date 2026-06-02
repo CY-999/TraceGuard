@@ -1,11 +1,10 @@
-"""Collect TRACEGuard JSONL metrics into CSV summaries."""
+"""Collect ASAGuard JSONL metrics into CSV summaries."""
 
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
-from statistics import mean
 
 import pandas as pd
 
@@ -15,12 +14,13 @@ NUMERIC_COLUMNS = [
     "clean_acc",
     "asr",
     "train_loss_mean",
-    "traceguard_mean_risk",
-    "traceguard_mean_weight",
-    "num_accepted",
-    "num_downweighted",
-    "num_rejected",
+    "asaguard_ac_mean_before",
+    "asaguard_ac_mean_after",
+    "asaguard_projected_energy_ratio_mean",
+    "asaguard_subspace_rank",
+    "asaguard_num_q_vectors",
 ]
+SUMMARY_COLUMNS = ["dataset", "attack", "defense", "seed", "path", *NUMERIC_COLUMNS]
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -43,7 +43,7 @@ def read_jsonl(path: Path) -> list[dict]:
 def parse_from_path(path: Path) -> dict[str, str | None]:
     parts = [part.lower() for part in path.parts]
     known_attacks = {"model_replacement", "dba", "neurotoxin", "a3fl", "none"}
-    known_defenses = {"fedavg", "multi_krum", "trimmed_mean", "flame", "flip", "fdcr", "traceguard"}
+    known_defenses = {"fedavg", "multi_krum", "trimmed_mean", "flame", "flip", "fdcr", "asaguard"}
     known_datasets = {"cifar10", "cifar100", "tinyimagenet", "tiny_imagenet", "fakedata"}
 
     parsed = {"dataset": None, "attack": None, "defense": None, "seed": None}
@@ -64,21 +64,10 @@ def parse_from_path(path: Path) -> dict[str, str | None]:
     return parsed
 
 
-def safe_mean(values) -> float | None:  # noqa: ANN001
-    if not isinstance(values, list) or not values:
-        return None
-    try:
-        return float(mean(float(value) for value in values))
-    except (TypeError, ValueError):
-        return None
-
-
-def summarize_file(path: Path) -> dict:
+def summarize_file(path: Path) -> dict | None:
     records = read_jsonl(path)
     if not records:
-        row = parse_from_path(path)
-        row["path"] = str(path)
-        return row
+        return None
 
     final = records[-1]
     row = parse_from_path(path)
@@ -93,11 +82,11 @@ def summarize_file(path: Path) -> dict:
             "clean_acc": final.get("clean_acc"),
             "asr": final.get("asr"),
             "train_loss_mean": final.get("train_loss_mean"),
-            "traceguard_mean_risk": safe_mean(final.get("traceguard_risk_scores")),
-            "traceguard_mean_weight": safe_mean(final.get("traceguard_weights")),
-            "num_accepted": final.get("num_accepted"),
-            "num_downweighted": final.get("num_downweighted"),
-            "num_rejected": final.get("num_rejected"),
+            "asaguard_ac_mean_before": final.get("asaguard_ac_mean_before"),
+            "asaguard_ac_mean_after": final.get("asaguard_ac_mean_after"),
+            "asaguard_projected_energy_ratio_mean": final.get("asaguard_projected_energy_ratio_mean"),
+            "asaguard_subspace_rank": final.get("asaguard_subspace_rank"),
+            "asaguard_num_q_vectors": final.get("asaguard_num_q_vectors"),
         }
     )
     return row
@@ -140,14 +129,16 @@ def main() -> int:
     output = Path(args.output)
 
     metric_paths = sorted(results_dir.rglob("metrics.jsonl"))
-    rows = [summarize_file(path) for path in metric_paths]
-    df = pd.DataFrame(rows)
+    rows = [row for path in metric_paths if (row := summarize_file(path)) is not None]
+    df = pd.DataFrame(rows, columns=SUMMARY_COLUMNS)
+    skipped_empty = len(metric_paths) - len(rows)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output, index=False)
     avg_path = write_average_summary(df, output)
 
     print(f"found_metrics_jsonl={len(metric_paths)}")
+    print(f"skipped_empty_metrics_jsonl={skipped_empty}")
     print(f"wrote_csv={output}")
     print(f"wrote_averaged_csv={avg_path}")
     return 0

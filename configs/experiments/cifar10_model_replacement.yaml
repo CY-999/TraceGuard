@@ -28,19 +28,32 @@ attack:
   num_malicious: 10
   target_label: 0
   poison_ratio: 0.5
+  trigger_type: patch
+  trigger_size: 4
+  trigger_value: 1.0
+  trigger_alpha: 0.2
+  trigger_location: bottom_right
+  scale_factor: auto
 
 defense:
-  name: traceguard
+  name: asaguard
+
+multi_krum:
+  num_byzantine: 2
+  num_selected: null
+
+trimmed_mean:
   num_byzantine: 2
   trim_ratio: null
 
-traceguard:
+
+asaguard:
   num_probes: 64
   probe_families:
     - patch
     - blend_low_alpha
     - frequency_sine
     - warping
-  tau: 4.0
-  reference_per_class: 5
+  subspace_rank: 4
+  eps: 1.0e-12
   adaptive_steps: 5

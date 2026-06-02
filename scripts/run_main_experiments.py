@@ -1,4 +1,4 @@
-"""Generate or run TRACEGuard main experiment commands."""
+"""Generate or run ASAGuard main experiment commands."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ DEFENSES = (
     "flame",
     "flip",
     "fdcr",
-    "traceguard",
+    "asaguard",
 )
 
 
@@ -35,7 +35,7 @@ class ExperimentCommand:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Generate or run TRACEGuard main experiment matrix commands.",
+        description="Generate or run ASAGuard main experiment matrix commands.",
     )
     parser.add_argument("--dataset", choices=DATASETS)
     parser.add_argument("--attack", choices=ATTACKS)
@@ -70,7 +70,7 @@ def generate_commands(args: argparse.Namespace) -> list[ExperimentCommand]:
                 command = [
                     sys.executable,
                     "-m",
-                    "traceguard.fl.run",
+                    "asaguard.fl.run",
                     "--config",
                     config_path(dataset, attack),
                     "--defense",

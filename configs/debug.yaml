@@ -22,50 +22,77 @@ training:
   lr: 0.01
   seed: 123
 
+asaguard_reference_size: 32
+asaguard_reference_seed: null
+asaguard_reference_stratified: true
+
 attack:
   name: none
   num_malicious: 0
   target_label: 0
   poison_ratio: 0.1
   trigger_type: patch
-  scale_factor: 1.0
+  trigger_location: bottom_right
+  scale_factor: auto
   fragment_layout: four_corners
   trigger_size: 4
   trigger_value: 1.0
   mask_ratio: 0.2
   history_window: 5
+  attack_start_round: 1
+  attack_stop_round: null
+  attack_interval: 1
   adaptive_steps: 5
   trigger_alpha: 0.2
   trigger_lr: 0.05
   dynamics_perturb_steps: 1
 
+dba:
+  num_fragments: 4
+  trigger_size: 4
+  trigger_gap: 2
+  trigger_location: 0
+  fragment_rows: 1
+  trigger_value: 1.0
+
 defense:
   name: fedavg
+
+multi_krum:
   num_byzantine: null
   num_selected: null
+
+trimmed_mean:
+  num_byzantine: null
   trim_ratio: null
+
+flame:
   clip_norm: null
   noise_std: 0.0
   cluster_method: agglomerative
   cluster_metric: cosine
+
+flip:
   reverse_steps: 5
   reverse_lr: 0.05
   trigger_size: 4
   trigger_alpha: 0.2
   target_label: 0
   hardening_ratio: 0.5
+
+fdcr:
   fisher_batches: 1
   discrepancy_metric: cosine
-  fdcr_tau: 4.0
+  tau: 4.0
   rescale_strength: 0.5
 
-traceguard:
+asaguard:
   num_probes: 8
   probe_families:
     - patch
     - blend_low_alpha
     - frequency_sine
     - warping
-  tau: 4.0
-  reference_per_class: 2
+  subspace_rank: 4
+  eps: 1.0e-12
   adaptive_steps: 2

@@ -16,6 +16,12 @@ wandb/
 *.egg-info/
 
 __pycache__/
+*.pyc
+*.pyo
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 pytest-cache-files-*/
+.coverage
+htmlcov/
 .DS_Store
