@@ -8,7 +8,7 @@ Neurotoxin, A3FL, asaguard, or any defense.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Mapping
 
 import numpy as np
 import torch
@@ -141,6 +141,8 @@ class ModelReplacementAttack:
         update: dict[str, torch.Tensor],
         *,
         scale_factor: float | None = None,
+        scale_keys: set[str] | None = None,
+        parameter_shapes: Mapping[str, torch.Size | tuple[int, ...]] | None = None,
     ) -> dict[str, torch.Tensor]:
         if scale_factor is None:
             if self.scale_factor == "auto":
@@ -148,11 +150,40 @@ class ModelReplacementAttack:
             scale_factor = float(self.scale_factor)
         if float(scale_factor) <= 0.0:
             raise ValueError("Model Replacement scale_factor must be positive")
+        if scale_keys is None:
+            raise ValueError("Model Replacement scaling requires explicit trainable parameter scale_keys")
+        if parameter_shapes is None:
+            raise ValueError("Model Replacement scaling requires trainable parameter shape metadata")
 
-        return {
-            key: value * float(scale_factor) if torch.is_floating_point(value) else value
-            for key, value in update.items()
-        }
+        scaled_update: dict[str, torch.Tensor] = {}
+        scale_factor_value = float(scale_factor)
+        for key in scale_keys:
+            if key not in update:
+                raise ValueError(f"Model Replacement update is missing trainable parameter: {key}")
+            if key not in parameter_shapes:
+                raise ValueError(f"Model Replacement shape metadata is missing parameter: {key}")
+            value = update[key]
+            if not torch.is_floating_point(value):
+                raise ValueError(f"Model Replacement update for trainable parameter is non-floating: {key}")
+            expected_shape = tuple(parameter_shapes[key])
+            if tuple(value.shape) != expected_shape:
+                raise ValueError(
+                    "Model Replacement update shape mismatch for "
+                    f"{key}: got {tuple(value.shape)}, expected {expected_shape}"
+                )
+
+        for key, value in update.items():
+            if key not in scale_keys:
+                scaled_update[key] = value
+                continue
+            scaled_value = value * scale_factor_value
+            if not bool(torch.isfinite(scaled_value).all()):
+                raise FloatingPointError(
+                    "Model Replacement scaled update contains NaN/Inf for "
+                    f"{key} with scale_factor={scale_factor_value}"
+                )
+            scaled_update[key] = scaled_value
+        return scaled_update
 
 
 def parse_scale_factor(value) -> ScaleFactor:  # noqa: ANN001

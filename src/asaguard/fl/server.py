@@ -388,6 +388,24 @@ class FedAvgServer:
                         if needs_replacement_scaling
                         else {}
                     )
+                    replacement_scale_keys = (
+                        {
+                            name
+                            for name, parameter in self.model.named_parameters()
+                            if parameter.requires_grad and torch.is_floating_point(parameter)
+                        }
+                        if needs_replacement_scaling
+                        else None
+                    )
+                    replacement_parameter_shapes = (
+                        {
+                            name: tuple(parameter.shape)
+                            for name, parameter in self.model.named_parameters()
+                            if parameter.requires_grad and torch.is_floating_point(parameter)
+                        }
+                        if needs_replacement_scaling
+                        else None
+                    )
                     selected_malicious_count = (
                         sum(1 for result in results if result.client_id in self.malicious_client_ids)
                         if needs_replacement_scaling
@@ -407,6 +425,8 @@ class FedAvgServer:
                             result.update = self.attack.scale_update(
                                 result.update,
                                 scale_factor=scale_factor,
+                                scale_keys=replacement_scale_keys,
+                                parameter_shapes=replacement_parameter_shapes,
                             )
                         if (
                             result.client_id in self.malicious_client_ids
